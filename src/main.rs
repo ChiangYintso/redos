@@ -1,13 +1,11 @@
 #![no_std]
 #![no_main]
-#![feature(const_mut_refs)]
-#![feature(const_raw_ptr_deref)]
 
 mod vga_buffer;
 
 use crate::vga_buffer::*;
-use core::panic::PanicInfo;
 use core::fmt::Write;
+use core::panic::PanicInfo;
 
 #[panic_handler]
 fn on_panic(info: &PanicInfo) -> ! {
