@@ -1,0 +1,10 @@
+[tasks.x64]
+script = '''
+cargo xbuild --target=x86_64-redos.json
+cargo bootimage --target=x86_64-redos.json
+'''
+
+[tasks.qemu-x64]
+script = '''
+qemu-system-x86_64 -drive format=raw,file=./target/x86_64-redos/debug/bootimage-redos.bin
+'''

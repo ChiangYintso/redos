@@ -1,23 +1,32 @@
 #![no_std]
 #![no_main]
+#![feature(const_mut_refs)]
+#![feature(const_raw_ptr_deref)]
+
+mod vga_buffer;
+
+use crate::vga_buffer::*;
 use core::panic::PanicInfo;
+use core::fmt::Write;
 
 #[panic_handler]
 fn on_panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
 
-static HELLO: &[u8] = b"Hello World!";
+fn print_something() {
+    WRITER.lock().write_byte(b'H');
+    WRITER.lock().write_str("ello ");
+    WRITER.lock().write_str("Wörld!\n");
+    write!(WRITER.lock(), "1 + 1 = {}\n", 1 + 1).unwrap();
+    println!("hello world");
+    println!("1 + 1 = {}", 1 + 1);
+}
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    let vga_buffer = 0xb8000 as *mut u8;
-
-    for (i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+    print_something();
+    panic!("Some panic message");
     loop {}
 }
