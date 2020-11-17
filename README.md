@@ -7,9 +7,14 @@ The Red OS requires Rust nightly version.
 cargo make x64
 ```
 
-## Run OS in QEMU
+## Build and run OS in QEMU
 ```shell script
-cargo make run-x64
+cargo xrun
+```
+
+## Run test
+```shell script
+cargo xtest
 ```
 
 ## References
