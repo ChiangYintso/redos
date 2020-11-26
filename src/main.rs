@@ -1,45 +1,37 @@
+//! # 全局属性
+//! - `#![no_std]`
+//!   禁用标准库
 #![no_std]
+//!
+//! - `#![no_main]`
+//!   不使用 `main` 函数等全部 Rust-level 入口点来作为程序入口
 #![no_main]
-#![feature(custom_test_frameworks)]
-#![test_runner(redos::test_runner)]
-#![reexport_test_harness_main = "test_main"]
+//! # 一些 unstable 的功能需要在 crate 层级声明后才可以使用
+//! - `#![feature(llvm_asm)]`
+//!   内嵌汇编
+#![feature(llvm_asm)]
+//!
+//! - `#![feature(global_asm)]`
+//!   内嵌整个汇编文件
+#![feature(global_asm)]
+//!
+//! - `#![feature(panic_info_message)]`
+//!   panic! 时，获取其中的信息并打印
+#![feature(panic_info_message)]
 
-mod serial;
-mod vga_buffer;
+#[macro_use]
+mod console;
+mod panic;
+mod sbi;
 
-use crate::vga_buffer::*;
-use core::fmt::Write;
-use core::panic::PanicInfo;
+// 汇编编写的程序入口，具体见该文件
+global_asm!(include_str!("entry.asm"));
 
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
-
-// panic handler in test mode
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    redos::test_panic_handler(info)
-}
-
-fn print_something() {
-    WRITER.lock().write_byte(b'H');
-    WRITER.lock().write_str("ello ");
-    WRITER.lock().write_str("Wörld!\n");
-    write!(WRITER.lock(), "1 + 1 = {}\n", 1 + 1).unwrap();
-    println!("hello world");
-    println!("1 + 2 = {}", 1 + 2);
-}
-
+/// Rust 的入口函数
+///
+/// 在 `_start` 为我们进行了一系列准备之后，这是第一个被调用的 Rust 函数
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
-    #[cfg(test)]
-    test_main();
-
-    print_something();
-    panic!("Some panic message");
-    loop {}
+pub extern "C" fn rust_main() -> ! {
+    println!("Hello rCore-Tutorial!");
+    panic!("end of rust_main")
 }

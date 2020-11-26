@@ -7,29 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bootloader = "0.9.11"
-volatile = "0.4.2"
-lazy_static = {version = "1.4.0", features = ["spin_no_std"]}
-spin = "0.7.0"
-x86_64 = "0.12.3"
-uart_16550 = "0.2.10"
 
 [profile.dev]
 panic = "abort"
 
 [profile.release]
 panic = "abort"
-
-# See https://github.com/rust-osdev/bootimage
-[package.metadata.bootimage]
-test-timeout = 300          # (in seconds)
-build-command = ["xbuild"]
-test-args = [
-    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio",
-    "-display", "none"
-]
-test-success-exit-code = 33  # (0x10 << 1) | 1
-
-[[test]]
-name = "should_panic"
-harness = false

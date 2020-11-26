@@ -1,5 +1,9 @@
-[tasks.x64]
+[tasks.x86_64]
 script = '''
-cargo xbuild
-cargo bootimage
+cargo build --target thumbv7em-none-eabihf
+'''
+
+[tasks.riscv]
+script = '''
+cargo build --target riscv64imac-unknown-none-elf
 '''
