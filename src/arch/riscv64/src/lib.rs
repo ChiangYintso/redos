@@ -1,2 +1,4 @@
 #![no_std]
-mod sbi;
+#![feature(llvm_asm)]
+
+pub mod sbi;
