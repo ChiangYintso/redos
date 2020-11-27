@@ -1,4 +1,0 @@
-[workspace]
-members = [
-    'x86_64', 'riscv64'
-]

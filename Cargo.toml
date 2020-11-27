@@ -8,13 +8,8 @@ edition = "2018"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 bootloader = "0.9.11"
-x86_64 = { path = "./src/arch/x86_64" }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-riscv64 = { path = "./src/arch/riscv64" }
-
-[dependencies]
-vga = {path = "./src/vga"}
 
 [profile.dev]
 panic = "abort"
