@@ -2,6 +2,7 @@
 #![no_main] // 禁用所有 Rust 层级的入口点
 #![feature(global_asm)]
 #![feature(llvm_asm)]
+#![feature(panic_info_message)]
 
 #[cfg(target_arch = "riscv64")]
 #[path = "arch/riscv64/mod.rs"]
@@ -25,7 +26,8 @@ use core::panic::PanicInfo;
 
 /// 这个函数将在 panic 时被调用
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("panic: {}", info.message().unwrap());
     loop {}
 }
 
@@ -34,13 +36,13 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     let hello = "Hello x86_64 World!";
     print!("{}", hello);
-    loop {}
+    panic!("ohhhhhhhh")
 }
 
 #[cfg(target_arch = "riscv64")]
 #[no_mangle]
 pub extern "C" fn riscv64_main() -> ! {
     let hello = "Hello riscv World!";
-    print!("hello");
-    loop {}
+    println!("{}", hello);
+    panic!("ohhhhhhhh")
 }
