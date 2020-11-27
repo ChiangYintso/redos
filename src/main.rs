@@ -1,45 +1,26 @@
-#![no_std]
-#![no_main]
-#![feature(custom_test_frameworks)]
-#![test_runner(redos::test_runner)]
-#![reexport_test_harness_main = "test_main"]
+#![no_std] // 不链接 Rust 标准库
+#![no_main] // 禁用所有 Rust 层级的入口点
 
-mod serial;
-mod vga_buffer;
-
-use crate::vga_buffer::*;
-use core::fmt::Write;
 use core::panic::PanicInfo;
 
-#[cfg(not(test))]
+#[cfg(target_arch = "riscv64imac")]
+extern crate riscv64;
+#[cfg(target_arch = "x86_64")]
+extern crate x86_64;
+
+/// 这个函数将在 panic 时被调用
 #[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
+fn panic(_info: &PanicInfo) -> ! {
     loop {}
-}
-
-// panic handler in test mode
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    redos::test_panic_handler(info)
-}
-
-fn print_something() {
-    WRITER.lock().write_byte(b'H');
-    WRITER.lock().write_str("ello ");
-    WRITER.lock().write_str("Wörld!\n");
-    write!(WRITER.lock(), "1 + 1 = {}\n", 1 + 1).unwrap();
-    println!("hello world");
-    println!("1 + 2 = {}", 1 + 2);
 }
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    #[cfg(test)]
-    test_main();
+    #[cfg(target_arch = "x86_64")]
+    {
+        static HELLO: &[u8] = b"Hello x86_64 World!";
+        x86_64::print_str(HELLO);
+    }
 
-    print_something();
-    panic!("Some panic message");
     loop {}
 }
