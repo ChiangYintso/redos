@@ -5,7 +5,7 @@
 macro_rules! print {
     () => ();
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::arch::io::print(format_args!($fmt $(, $($arg)+)?));
+        $crate::arch::console::print(format_args!($fmt $(, $($arg)+)?));
     }
 }
 
@@ -16,6 +16,6 @@ macro_rules! print {
 macro_rules! println {
     () => ($crate::print!("\n"));
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::arch::io::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+        $crate::arch::console::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
     }
 }

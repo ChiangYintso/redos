@@ -9,7 +9,7 @@ cargo make x64
 
 ## Build and run OS in QEMU
 ```shell script
-cargo xrun
+cargo xrun --target x86_64-unknown-redos.json
 ```
 
 ## Run test

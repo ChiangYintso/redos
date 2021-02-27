@@ -1,2 +1,2 @@
 pub mod vga;
-pub mod io;
+pub mod console;
