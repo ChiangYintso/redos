@@ -10,6 +10,7 @@ edition = "2018"
 bootloader = "0.9.14"
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
+riscv = { version = "0.6.0", features = ["inline-asm"] }
 
 [profile.dev]
 panic = "abort"
