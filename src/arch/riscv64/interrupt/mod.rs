@@ -4,6 +4,7 @@
 
 mod context;
 mod handler;
+mod timer;
 
 use crate::println;
 
@@ -13,5 +14,6 @@ use crate::println;
 /// - [`timer::init`]
 pub fn init() {
     handler::init();
+    timer::init();
     println!("mod interrupt initialized");
 }

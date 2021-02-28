@@ -69,6 +69,6 @@ pub extern "C" fn riscv64_main() -> ! {
     unsafe {
         llvm_asm!("ebreak"::::"volatile");
     };
-    unreachable!();
+    loop {}
     panic!("end of rust_main")
 }
