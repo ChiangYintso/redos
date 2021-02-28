@@ -6,6 +6,8 @@ BIN_FILE    := target/$(TARGET)/$(MODE)/kernel.bin
 OBJDUMP     := rust-objdump --arch-name=riscv64
 OBJCOPY     := rust-objcopy --binary-architecture=riscv64
 
+FEAT := ""
+
 .PHONY: doc kernel build clean qemu run
 
 # 默认 build 为输出二进制文件
@@ -17,7 +19,7 @@ doc:
 
 # 编译 kernel
 kernel:
-	@cargo build --target riscv64imac-unknown-none-elf
+	@cargo build --target riscv64imac-unknown-none-elf --features $(FEAT)
 
 # 生成 kernel 的二进制文件
 $(BIN_FILE): kernel
@@ -32,7 +34,7 @@ clean:
 	@cargo clean
 
 # 运行 QEMU
-qemu: build
+qemu-riscv64: build
 	@qemu-system-riscv64 \
             -machine virt \
             -nographic \
@@ -40,4 +42,4 @@ qemu: build
             -device loader,file=$(BIN_FILE),addr=0x80200000
 
 # 一键运行
-run: build qemu
+run-riscv64: build qemu-riscv64

@@ -27,7 +27,7 @@ pub fn init() {
 #[no_mangle]
 pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) {
     // 可以通过 Debug 来查看发生了什么中断
-    #[cfg(debug_assertions)]
+    // #[cfg(debug_assertions)]
     // println!("{:x?}", scause.cause());
 
     match scause.cause() {

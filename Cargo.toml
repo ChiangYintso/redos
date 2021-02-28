@@ -8,9 +8,15 @@ edition = "2018"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 bootloader = "0.9.14"
+volatile = "0.4.3"
+lazy_static = {version = "1.4.0", features = ["spin_no_std"]}
+spin = "0.7.0"
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 riscv = { version = "0.6.0", features = ["inline-asm"] }
+
+[dependencies]
+buddy_system_allocator = "0.7.0"
 
 [profile.dev]
 panic = "abort"
@@ -22,3 +28,6 @@ panic = "abort"
 [package.metadata.bootimage]
 test-timeout = 300          # (in seconds)
 build-command = ["xbuild"]
+
+[features]
+test_riscv64 = []

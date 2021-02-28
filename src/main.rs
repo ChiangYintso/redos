@@ -18,13 +18,13 @@
 //! - `#![feature(panic_info_message)]`
 //!   panic! 时，获取其中的信息并打印
 #![feature(panic_info_message)]
-
+#![feature(alloc_error_handler)]
 
 #[cfg(target_arch = "riscv64")]
 #[path = "arch/riscv64/mod.rs"]
 #[macro_use]
 pub mod arch;
-#[cfg(target_arch = "riscv64")]
+
 use arch::*;
 
 #[cfg(target_arch = "x86_64")]
@@ -34,41 +34,25 @@ pub mod arch;
 
 #[macro_use]
 pub mod stdio;
+pub mod memory;
 
 #[cfg(target_arch = "riscv64")]
 global_asm!(include_str!("riscv64_entry.asm"));
 
-use core::fmt;
-use core::fmt::Write;
-use core::panic::PanicInfo;
-
-/// 这个函数将在 panic 时被调用
-#[cfg(target_arch = "x86_64")]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("panic: {}", info.message().unwrap());
-    loop {}
-}
 
 #[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    let hello = "Hello x86_64 World!";
-    print!("{}", hello);
-    panic!("ohhhhhhhh")
+    kernel_init();
 }
 
-#[cfg(target_arch = "riscv64")]
 #[no_mangle]
-pub extern "C" fn riscv64_main() -> ! {
-    let hello = "Hello riscv World!";
-    println!("{}", hello);
-    // 初始化各种模块
-    interrupt::init();
+pub extern "C" fn kernel_init() -> ! {
+    #[cfg(target_arch = "x86_64")]
+    x64_main();
 
-    unsafe {
-        llvm_asm!("ebreak"::::"volatile");
-    };
-    loop {}
-    panic!("end of rust_main")
+    #[cfg(target_arch = "riscv64")]
+    riscv64_main();
+
+    panic!("unsupported architecture!")
 }
