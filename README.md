@@ -8,23 +8,26 @@ cargo make x64
 ```
 
 ## Build and run OS in QEMU
-run in RISCV 64
+Run in RISCV 64
 ```shell
 make run-riscv64
 ```
 
+Run in x86_64
 ```shell script
 cargo xrun --target x86_64-unknown-redos.json
 ```
 
 ## Run test
-Test RISC-V 64
+Test for RISC-V 64
 ```shell
 $ make run FEAT="test_riscv64"
 ```
 
+Test for x86_64 (TODO)
+
 ```shell script
-cargo xtest
+cargo xtest --target x86_64-unknown-redos.json
 ```
 
 ## References

@@ -35,6 +35,7 @@ pub mod arch;
 #[macro_use]
 pub mod stdio;
 pub mod memory;
+pub mod tests;
 
 #[cfg(target_arch = "riscv64")]
 global_asm!(include_str!("riscv64_entry.asm"));

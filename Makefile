@@ -6,6 +6,7 @@ BIN_FILE    := target/$(TARGET)/$(MODE)/kernel.bin
 OBJDUMP     := rust-objdump --arch-name=riscv64
 OBJCOPY     := rust-objcopy --binary-architecture=riscv64
 
+# "test_riscv64"
 FEAT := ""
 
 .PHONY: doc kernel build clean qemu run
