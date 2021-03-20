@@ -31,6 +31,11 @@ pub fn shutdown() -> ! {
     unreachable!()
 }
 
+/// 设置下一次时钟中断的时间
+pub fn set_timer(time: usize) {
+    sbi_call(SBI_SET_TIMER, time, 0, 0);
+}
+
 /// SBI 调用
 #[inline(always)]
 fn sbi_call(which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
