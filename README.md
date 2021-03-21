@@ -1,21 +1,11 @@
 # Red OS
 
-The Red OS requires Rust nightly version.
+## Build and run in QEMU
 
-## Compile and Make bootable image
-```shell script
-cargo make x64
+```shell
+make qemu
 ```
 
-## Build and run OS in QEMU
-```shell script
-cargo xrun
-```
-
-## Run test
-```shell script
-cargo xtest
-```
 
 ## References
 - [Blog OS](https://github.com/phil-opp/blog_os)

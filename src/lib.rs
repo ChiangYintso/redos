@@ -18,12 +18,20 @@
 //! - `#![feature(panic_info_message)]`
 //!   panic! 时，获取其中的信息并打印
 #![feature(panic_info_message)]
+#![feature(const_raw_ptr_to_usize_cast)]
+#![feature(unchecked_math)]
+#![feature(core_intrinsics)]
 
 #[macro_use]
 pub mod console;
-mod panic;
-mod sbi;
+pub mod arena;
 pub mod interrupt;
+mod kernel_heap;
+pub mod memory;
+mod panic;
+pub mod sbi;
+
+type KResult<T> = Result<T, &'static str>;
 
 // 汇编编写的程序入口，具体见该文件
 global_asm!(include_str!("entry.asm"));

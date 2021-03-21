@@ -10,6 +10,7 @@
 //! - `#![feature(llvm_asm)]`
 //!   内嵌汇编
 #![feature(llvm_asm)]
+#![feature(asm)]
 
 #[macro_use]
 extern crate redos;
@@ -18,13 +19,22 @@ extern crate redos;
 ///
 /// 在 `_start` 为我们进行了一系列准备之后，这是第一个被调用的 Rust 函数
 #[no_mangle]
-pub extern "C" fn rust_main() -> ! {
-    println!("Hello test_ebreak!");
+pub extern "C" fn rust_main() {
+    println!("Hello ktest1!");
     // 初始化各种模块
     redos::interrupt::init();
+    let x = div();
+    println!("{}", x);
+}
 
+fn div() -> u32 {
+    let mut x: u32;
+    let mut y: u32;
+    let z: u32;
     unsafe {
-        llvm_asm!("ebreak"::::"volatile");
-    };
-    panic!("end of rust_main")
+        asm!("li {}, 50", out(reg) x);
+        asm!("li {}, 0", out(reg) y);
+        asm!("divu {}, {}, {}", out(reg) z, inout(reg) x, inout(reg) y);
+    }
+    z
 }

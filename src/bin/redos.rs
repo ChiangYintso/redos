@@ -10,17 +10,11 @@
 //! - `#![feature(llvm_asm)]`
 //!   内嵌汇编
 #![feature(llvm_asm)]
-//!
-//! - `#![feature(global_asm)]`
-//!   内嵌整个汇编文件
-#![feature(global_asm)]
-//!
-//! - `#![feature(panic_info_message)]`
-//!   panic! 时，获取其中的信息并打印
-#![feature(panic_info_message)]
 
 #[macro_use]
 extern crate redos;
+
+use redos::sbi::console_getchar;
 
 /// Rust 的入口函数
 ///

@@ -33,6 +33,7 @@ pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) {
         Trap::Exception(Exception::Breakpoint) => breakpoint(context),
         // 时钟中断
         Trap::Interrupt(Interrupt::SupervisorTimer) => supervisor_timer(context),
+        Trap::Exception(Exception::LoadFault) => load_fault(stval),
         // 其他情况，终止当前线程
         _ => fault(context, scause, stval),
     }
@@ -51,6 +52,11 @@ fn breakpoint(context: &mut Context) {
 /// 目前只会在 [`timer`] 模块中进行计数
 fn supervisor_timer(_: &Context) {
     timer::tick();
+}
+
+/// 处理程序因无效访问内存造成异常，这个访问的地址会被存放在stval中。
+fn load_fault(stval: usize) {
+    panic!("load fault: {:x?}", stval);
 }
 
 /// 出现未能解决的异常
