@@ -3,6 +3,13 @@ use crate::arena::arena_alloc;
 use crate::memory::addr::PhysicalPageNumber;
 use crate::memory::MEMORY_END_ADDRESS;
 use crate::KResult;
+use lazy_static::lazy_static;
+use spin::Mutex;
+
+lazy_static! {
+    /// 帧分配器
+    pub static ref FRAME_ALLOCATOR: Mutex<FrameAllocator> = Mutex::default();
+}
 
 /// Next fit allocator using bit vector
 pub struct FrameAllocator {
@@ -13,6 +20,8 @@ pub struct FrameAllocator {
     /// pointer to the next available byte
     next_byte: usize,
 }
+
+unsafe impl Send for FrameAllocator {}
 
 impl Default for FrameAllocator {
     fn default() -> FrameAllocator {
@@ -60,13 +69,12 @@ impl FrameAllocator {
         }
     }
 
-    pub fn dealloc(&mut self, ppn: PhysicalPageNumber) -> KResult<()> {
+    pub fn dealloc(&mut self, ppn: PhysicalPageNumber) {
         unsafe {
             let length = ppn - self.start;
             let s = self.bit_vector.add(length / 8);
             *s |= 1 << (length % 8);
         }
-        Ok(())
     }
 
     #[inline]
