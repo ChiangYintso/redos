@@ -2,17 +2,20 @@ pub mod addr;
 pub mod frame;
 pub mod frame_tracker;
 
-use crate::memory::addr::PhysicalAddress;
+use crate::memory::addr::{PhysicalAddress, VirtualAddress};
 use lazy_static::lazy_static;
 
 /// 页 / 帧大小(4k)，必须是 2^n
 pub const PAGE_SIZE: usize = 4096;
 
+/// 内核使用线性映射的偏移量
+pub const KERNEL_MAP_OFFSET: usize = 0xffff_ffff_0000_0000;
+
 lazy_static! {
     /// 内核代码结束的地址，即可以用来分配的内存起始地址
     ///
     /// 因为 Rust 语言限制，我们只能将其作为一个运行时求值的 static 变量，而不能作为 const
-    pub static ref KERNEL_END_ADDRESS: PhysicalAddress = PhysicalAddress(kernel_end as usize);
+    pub static ref KERNEL_END_ADDRESS: VirtualAddress = VirtualAddress(kernel_end as usize);
 }
 
 /// 可以访问的内存区域起始地址

@@ -1,6 +1,6 @@
 use super::KERNEL_END_ADDRESS;
 use crate::arena::arena_alloc;
-use crate::memory::addr::PhysicalPageNumber;
+use crate::memory::addr::{PhysicalAddress, PhysicalPageNumber};
 use crate::memory::MEMORY_END_ADDRESS;
 use crate::KResult;
 use lazy_static::lazy_static;
@@ -25,7 +25,7 @@ unsafe impl Send for FrameAllocator {}
 
 impl Default for FrameAllocator {
     fn default() -> FrameAllocator {
-        let start = PhysicalPageNumber::ceil(*KERNEL_END_ADDRESS);
+        let start = PhysicalPageNumber::ceil(PhysicalAddress::from(*KERNEL_END_ADDRESS));
         let length = PhysicalPageNumber::floor(MEMORY_END_ADDRESS) - start;
         assert_ne!(length, 0);
         println!("init frame allocator");
