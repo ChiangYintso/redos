@@ -14,7 +14,7 @@
 #[macro_use]
 extern crate redos;
 
-use core::intrinsics::size_of;
+use core::mem::size_of;
 
 /// Rust 的入口函数
 ///
@@ -29,9 +29,7 @@ pub extern "C" fn rust_main() {
         pn = new_pn;
     }
     assert!(allocator.alloc().is_err());
-    unsafe {
-        println!("{}", size_of::<usize>());
-    }
+    println!("{}", size_of::<usize>());
 
     panic!("end");
 }
