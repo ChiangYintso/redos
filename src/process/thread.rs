@@ -131,3 +131,30 @@ impl core::fmt::Debug for Thread {
             .finish()
     }
 }
+
+/// 内核线程需要调用这个函数来退出
+fn kernel_thread_exit() {
+    // 当前线程标记为结束
+    PROCESSOR.lock().current_thread().as_ref().inner().dead = true;
+    // 制造一个中断来交给操作系统处理
+    unsafe { llvm_asm!("ebreak" :::: "volatile") };
+}
+
+/// 创建一个内核进程
+pub fn create_kernel_thread(
+    process: Arc<Process>,
+    entry_point: usize,
+    arguments: Option<&[usize]>,
+) -> Arc<Thread> {
+    // 创建线程
+    let thread = Thread::new(process, entry_point, arguments).unwrap();
+    // 设置线程的返回地址为 kernel_thread_exit
+    thread
+        .as_ref()
+        .inner()
+        .context
+        .as_mut()
+        .unwrap()
+        .set_ra(kernel_thread_exit as usize);
+    thread
+}

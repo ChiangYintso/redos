@@ -1,7 +1,8 @@
-use riscv::register::stvec;
 use crate::interrupt::context::Context;
-use riscv::register::scause::{Scause, Trap, Exception, Interrupt};
 use crate::interrupt::timer;
+use crate::process::PROCESSOR;
+use riscv::register::scause::{Exception, Interrupt, Scause, Trap};
+use riscv::register::stvec;
 
 global_asm!(include_str!("./interrupt.asm"));
 
@@ -25,7 +26,17 @@ pub fn init() {
 /// 具体的中断类型需要根据 scause 来推断，然后分别处理
 /// scause记录中断是否是硬件中断，以及具体的中断原因。
 #[no_mangle]
-pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) {
+pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) -> *mut Context {
+    // 首先检查线程是否已经结束（内核线程会自己设置标记来结束自己）
+    {
+        let mut processor = PROCESSOR.lock();
+        let current_thread = processor.current_thread();
+        if current_thread.as_ref().inner().dead {
+            println!("thread {} exit", current_thread.id);
+            processor.kill_current_thread();
+            return processor.prepare_next_thread();
+        }
+    }
     // 可以通过 Debug 来查看发生了什么中断
     // println!("{:x?}", context.scause.cause());
     match scause.cause() {
@@ -42,25 +53,26 @@ pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) {
 /// 处理 ebreak 断点
 ///
 /// 继续执行，其中 `sepc` 增加 2 字节，以跳过当前这条 `ebreak` 指令
-fn breakpoint(context: &mut Context) {
-    println!("Breakpoint at 0x{:x}", context.sepc);
+fn breakpoint(context: &mut Context) -> *mut Context {
+    // println!("Breakpoint at 0x{:x}", context.sepc);
     context.sepc += 2;
+    context
 }
 
 /// 处理时钟中断
-///
-/// 目前只会在 [`timer`] 模块中进行计数
-fn supervisor_timer(_: &Context) {
+fn supervisor_timer(context: &mut Context) -> *mut Context {
     timer::tick();
+    PROCESSOR.lock().park_current_thread(context);
+    PROCESSOR.lock().prepare_next_thread()
 }
 
 /// 处理程序因无效访问内存造成异常，这个访问的地址会被存放在stval中。
-fn load_fault(stval: usize) {
+fn load_fault(stval: usize) -> ! {
     panic!("load fault: {:x?}", stval);
 }
 
 /// 出现未能解决的异常
-fn fault(context: &mut Context, scause: Scause, stval: usize) {
+fn fault(context: &mut Context, scause: Scause, stval: usize) -> ! {
     panic!(
         "Unresolved interrupt: {:?}\n{:x?}\nstval: {:x}",
         scause.cause(),

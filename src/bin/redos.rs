@@ -15,6 +15,9 @@
 extern crate redos;
 
 use redos::memory;
+use redos::process::process::Process;
+use redos::process::thread::create_kernel_thread;
+use redos::process::PROCESSOR;
 
 /// Rust 的入口函数
 ///
@@ -29,5 +32,31 @@ pub extern "C" fn rust_main() -> ! {
     remap.activate();
 
     println!("kernel remapped");
-    loop {}
+    extern "C" {
+        fn __restore(context: usize);
+    }
+
+    {
+        let mut processor = PROCESSOR.lock();
+        // 创建一个内核进程
+        let kernel_process = Process::new_kernel().unwrap();
+        // 为这个进程创建多个线程，并设置入口均为 sample_process，而参数不同
+        for i in 1..12usize {
+            processor.add_thread(create_kernel_thread(
+                kernel_process.clone(),
+                sample_process as usize,
+                Some(&[i]),
+            ));
+        }
+    }
+
+    // 获取第一个线程的 Context，具体原理后面讲解
+    let context = PROCESSOR.lock().prepare_next_thread();
+    // 启动第一个线程
+    unsafe { __restore(context as usize) };
+    unreachable!();
+}
+
+fn sample_process(id: usize) {
+    println!("hello from kernel thread {}", id);
 }

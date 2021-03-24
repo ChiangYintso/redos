@@ -23,6 +23,7 @@
 //!   我们使用了一个全局动态内存分配器，以实现原本标准库中的堆内存分配。
 //!   而语言要求我们同时实现一个错误回调，这里我们直接 panic
 #![feature(alloc_error_handler)]
+#![feature(drain_filter)]
 
 #[macro_use]
 pub mod console;
@@ -30,7 +31,7 @@ pub mod arena;
 pub mod interrupt;
 pub mod memory;
 mod panic;
-mod process;
+pub mod process;
 pub mod sbi;
 
 type KResult<T> = Result<T, &'static str>;
