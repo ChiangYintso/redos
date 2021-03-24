@@ -1,11 +1,12 @@
 //! 提供物理页的「`Box`」 [`FrameTracker`]
 
-use crate::memory::frame::FRAME_ALLOCATOR;
-use crate::memory::{addr::*, PAGE_SIZE};
+use crate::memory::addr::{PhysicalAddress, PhysicalPageNumber};
+use crate::memory::{frame::FRAME_ALLOCATOR, PAGE_SIZE};
 
 /// 分配出的物理页
 ///
 /// # `Tracker` 是什么？
+/// 太长不看
 /// > 可以理解为 [`Box`](alloc::boxed::Box)，而区别在于，其空间不是分配在堆上，
 /// > 而是直接在内存中划一片（一个物理页）。
 ///
@@ -32,9 +33,24 @@ impl FrameTracker {
     }
 }
 
+/// `FrameTracker` 可以 deref 得到对应的 `[u8; PAGE_SIZE]`
+impl core::ops::Deref for FrameTracker {
+    type Target = [u8; PAGE_SIZE];
+    fn deref(&self) -> &Self::Target {
+        self.page_number().deref_kernel()
+    }
+}
+
+/// `FrameTracker` 可以 deref 得到对应的 `[u8; PAGE_SIZE]`
+impl core::ops::DerefMut for FrameTracker {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.page_number().deref_kernel()
+    }
+}
+
 /// 帧在释放时会放回 [`static@FRAME_ALLOCATOR`] 的空闲链表中
 impl Drop for FrameTracker {
     fn drop(&mut self) {
-        FRAME_ALLOCATOR.lock().dealloc(self.0);
+        FRAME_ALLOCATOR.lock().dealloc(self);
     }
 }

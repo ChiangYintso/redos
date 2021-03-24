@@ -14,7 +14,7 @@
 #[macro_use]
 extern crate redos;
 
-use redos::sbi::console_getchar;
+use redos::memory;
 
 /// Rust 的入口函数
 ///
@@ -24,6 +24,10 @@ pub extern "C" fn rust_main() -> ! {
     println!("Hello rCore-Tutorial!");
     // 初始化各种模块
     redos::interrupt::init();
+    memory::init();
+    let remap = memory::mapping::MemorySet::new_kernel().unwrap();
+    remap.activate();
 
+    println!("kernel remapped");
     loop {}
 }

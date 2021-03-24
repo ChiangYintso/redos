@@ -1,10 +1,13 @@
+use lazy_static::lazy_static;
+
+use crate::memory::addr::{PhysicalAddress, VirtualAddress};
+
 pub mod addr;
 pub mod frame;
 pub mod frame_tracker;
-mod mapping;
-
-use crate::memory::addr::{PhysicalAddress, VirtualAddress};
-use lazy_static::lazy_static;
+mod kernel_heap;
+pub mod mapping;
+mod range;
 
 /// 页 / 帧大小(4k)，必须是 2^n
 pub const PAGE_SIZE: usize = 4096;
@@ -29,4 +32,15 @@ extern "C" {
     ///
     /// 作为变量存在 [`KERNEL_END_ADDRESS`]
     fn kernel_end();
+}
+
+/// 初始化内存相关的子模块
+///
+/// - [`heap::init`]
+pub fn init() {
+    kernel_heap::init();
+    // 允许内核读写用户态内存
+    unsafe { riscv::register::sstatus::set_sum() };
+
+    println!("mod memory initialized");
 }

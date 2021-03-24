@@ -29,6 +29,11 @@ _start:
     lui t0, %hi(rust_main)
     addi t0, t0, %lo(rust_main)
     jr t0
+# 触发访问非法地址中断
+    ld x1, (x0)
+# 永不返回
+spin:
+    j spin
 
     # 回忆：bss 段是 ELF 文件中只记录长度，而全部初始化为 0 的一段内存空间
     # 这里声明字段 .bss.stack 作为操作系统启动时的栈

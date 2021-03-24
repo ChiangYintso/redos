@@ -13,8 +13,7 @@
 
 use super::page_table_entry::PageTableEntry;
 use crate::memory::addr::PhysicalPageNumber;
-use crate::memory::frame_tracker::FrameTracker;
-use crate::memory::PAGE_SIZE;
+use crate::memory::{addr, frame_tracker::FrameTracker, PAGE_SIZE};
 
 /// 存有 512 个页表项的页表
 ///
@@ -44,7 +43,7 @@ pub struct PageTableTracker(pub FrameTracker);
 impl PageTableTracker {
     /// 将一个分配的帧清零，形成空的页表
     pub fn new(frame: FrameTracker) -> Self {
-        let mut page_table = PageTableTracker(frame);
+        let mut page_table = Self(frame);
         page_table.zero_init();
         page_table
     }

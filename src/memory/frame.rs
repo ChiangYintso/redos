@@ -1,6 +1,7 @@
 use super::KERNEL_END_ADDRESS;
 use crate::arena::arena_alloc;
 use crate::memory::addr::{PhysicalAddress, PhysicalPageNumber};
+use crate::memory::frame_tracker::FrameTracker;
 use crate::memory::MEMORY_END_ADDRESS;
 use crate::KResult;
 use lazy_static::lazy_static;
@@ -46,7 +47,7 @@ impl Default for FrameAllocator {
 }
 
 impl FrameAllocator {
-    pub fn alloc(&mut self) -> KResult<PhysicalPageNumber> {
+    pub fn alloc(&mut self) -> KResult<FrameTracker> {
         if self.used == self.frame_total {
             return Err("no frame available");
         }
@@ -65,11 +66,14 @@ impl FrameAllocator {
                 }
             }
 
-            Ok(self.start + (self.next_byte * 8 + (place.trailing_zeros() + 1) as usize))
+            Ok(FrameTracker(
+                self.start + (self.next_byte * 8 + (place.trailing_zeros() + 1) as usize),
+            ))
         }
     }
 
-    pub fn dealloc(&mut self, ppn: PhysicalPageNumber) {
+    pub fn dealloc(&mut self, frame: &FrameTracker) {
+        let ppn = frame.0;
         unsafe {
             let length = ppn - self.start;
             let s = self.bit_vector.add(length / 8);
