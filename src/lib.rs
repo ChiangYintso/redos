@@ -30,6 +30,7 @@ pub mod arena;
 pub mod interrupt;
 pub mod memory;
 mod panic;
+mod process;
 pub mod sbi;
 
 type KResult<T> = Result<T, &'static str>;

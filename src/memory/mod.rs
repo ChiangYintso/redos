@@ -7,7 +7,7 @@ pub mod frame;
 pub mod frame_tracker;
 mod kernel_heap;
 pub mod mapping;
-mod range;
+pub mod range;
 
 /// 页 / 帧大小(4k)，必须是 2^n
 pub const PAGE_SIZE: usize = 4096;
