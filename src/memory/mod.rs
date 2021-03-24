@@ -1,6 +1,7 @@
 pub mod addr;
 pub mod frame;
 pub mod frame_tracker;
+mod mapping;
 
 use crate::memory::addr::{PhysicalAddress, VirtualAddress};
 use lazy_static::lazy_static;
