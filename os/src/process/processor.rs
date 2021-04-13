@@ -73,7 +73,10 @@ pub struct Processor {
 impl Processor {
     /// 获取一个当前线程的 `Arc` 引用
     pub fn current_thread(&self) -> Arc<Thread> {
-        self.current_thread.as_ref().unwrap().clone()
+        self.current_thread
+            .as_ref()
+            .expect("error in `Processor::current_thread`: no thread")
+            .clone()
     }
 
     /// 激活下一个线程的 `Context`

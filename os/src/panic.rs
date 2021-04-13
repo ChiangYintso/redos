@@ -1,7 +1,7 @@
 //! 代替 std 库，实现 panic 和 abort 的功能
 
-use core::panic::PanicInfo;
 use crate::sbi::shutdown;
+use core::panic::PanicInfo;
 
 /// 打印 panic 的信息并 [`shutdown`]
 ///
@@ -13,7 +13,12 @@ fn panic_handler(info: &PanicInfo) -> ! {
     // 参考：https://misc.flogisoft.com/bash/tip_colors_and_formatting
     //
     // 需要全局开启 feature(panic_info_message) 才可以调用 .message() 函数
-    println!("\x1b[1;31mpanic: '{}'\x1b[0m", info.message().unwrap());
+
+    println!(
+        "\x1b[1;31mpanic in {}: '{}'\x1b[0m",
+        info.location().unwrap(),
+        info.message().unwrap()
+    );
     shutdown()
 }
 

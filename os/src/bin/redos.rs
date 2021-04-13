@@ -15,19 +15,23 @@
 extern crate redos;
 
 use redos::memory;
+use redos::memory::addr::PhysicalAddress;
 use redos::process::process::Process;
 use redos::process::thread::create_kernel_thread;
 use redos::process::PROCESSOR;
+use redos::{drivers, fs};
 
 /// Rust 的入口函数
 ///
 /// 在 `_start` 为我们进行了一系列准备之后，这是第一个被调用的 Rust 函数
 #[no_mangle]
-pub extern "C" fn rust_main() -> ! {
+pub extern "C" fn rust_main(_hart_id: usize, dtb_pa: PhysicalAddress) -> ! {
     println!("Hello rCore-Tutorial!");
     // 初始化各种模块
     redos::interrupt::init();
     memory::init();
+    drivers::init(dtb_pa);
+
     let remap = memory::mapping::MemorySet::new_kernel().unwrap();
     remap.activate();
 

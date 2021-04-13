@@ -44,6 +44,8 @@ pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) -> 
         Trap::Exception(Exception::Breakpoint) => breakpoint(context),
         // 时钟中断
         Trap::Interrupt(Interrupt::SupervisorTimer) => supervisor_timer(context),
+        // 外部中断（键盘输入）
+        Trap::Interrupt(Interrupt::SupervisorExternal) => supervisor_external(context),
         Trap::Exception(Exception::LoadFault) => load_fault(stval),
         // 其他情况，终止当前线程
         _ => fault(context, scause, stval),
@@ -64,6 +66,11 @@ fn supervisor_timer(context: &mut Context) -> *mut Context {
     timer::tick();
     PROCESSOR.lock().park_current_thread(context);
     PROCESSOR.lock().prepare_next_thread()
+}
+
+fn supervisor_external(context: &mut Context) -> *mut Context {
+    println!("{:?}", context);
+    context
 }
 
 /// 处理程序因无效访问内存造成异常，这个访问的地址会被存放在stval中。

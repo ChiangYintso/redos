@@ -28,6 +28,8 @@
 #[macro_use]
 pub mod console;
 pub mod arena;
+pub mod drivers;
+pub mod fs;
 pub mod interrupt;
 pub mod memory;
 mod panic;
