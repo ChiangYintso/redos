@@ -7,10 +7,14 @@ extern crate user_lib;
 use user_lib::console::*;
 
 #[no_mangle]
-pub fn main() -> ! {
+pub fn main() -> usize {
     println!("\x1b[2J<notebook>");
     loop {
         let string = getchars();
-        print!("{}", string);
+        println!("{} len: {}", string, string.len());
+        if string == "exit\n" {
+            println!("bye");
+            return 0;
+        }
     }
 }

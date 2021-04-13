@@ -44,6 +44,7 @@ pub extern "C" fn rust_main(_hart_id: usize, dtb_pa: PhysicalAddress) -> ! {
             ));
         }
         processor.add_thread(create_user_process("hello_world"));
+        processor.add_thread(create_user_process("notebook"));
     }
 
     extern "C" {
