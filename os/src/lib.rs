@@ -31,6 +31,7 @@ pub mod arena;
 pub mod drivers;
 pub mod fs;
 pub mod interrupt;
+pub mod kernel;
 pub mod memory;
 mod panic;
 pub mod process;

@@ -1,12 +1,19 @@
 //! 进程 [`Process`]
 
+extern crate alloc;
+
 use super::alloc::sync::Arc;
+use crate::fs::stdin::STDIN;
+use crate::fs::INode;
+use crate::fs::STDOUT;
 use crate::memory::addr::VirtualAddress;
 use crate::memory::mapping::{Flags, MapType, MemorySet, Segment};
 use crate::memory::range::Range;
 use crate::memory::PAGE_SIZE;
 use crate::KResult;
+use alloc::{vec, vec::Vec};
 use spin::Mutex;
+use xmas_elf::ElfFile;
 
 /// 进程的信息
 pub struct Process {
@@ -19,6 +26,8 @@ pub struct Process {
 pub struct ProcessInner {
     /// 进程中的线程公用页表 / 内存映射
     pub memory_set: MemorySet,
+    /// 打开的文件描述符
+    pub descriptors: Vec<Arc<dyn INode>>,
 }
 
 #[allow(unused)]
@@ -29,7 +38,18 @@ impl Process {
             is_user: false,
             inner: Mutex::new(ProcessInner {
                 memory_set: MemorySet::new_kernel()?,
-                // descriptors: vec![STDIN.clone(), STDOUT.clone()],
+                descriptors: vec![STDIN.clone(), STDOUT.clone()],
+            }),
+        }))
+    }
+
+    /// 创建进程，从文件中读取代码
+    pub fn from_elf(file: &ElfFile, is_user: bool) -> KResult<Arc<Self>> {
+        Ok(Arc::new(Self {
+            is_user,
+            inner: Mutex::new(ProcessInner {
+                memory_set: MemorySet::from_elf(file, is_user)?,
+                descriptors: vec![STDIN.clone(), STDOUT.clone()],
             }),
         }))
     }

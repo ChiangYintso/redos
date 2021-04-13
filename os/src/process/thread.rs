@@ -1,6 +1,7 @@
 //! 线程 [`Thread`]
 
 use super::*;
+use crate::fs::{INodeExt, ROOT_INODE};
 use crate::interrupt::context::Context;
 use crate::memory::addr::VirtualAddress;
 use crate::memory::mapping::Flags;
@@ -11,6 +12,7 @@ use crate::KResult;
 use alloc::sync::Arc;
 use core::hash::{Hash, Hasher};
 use spin::Mutex;
+use xmas_elf::ElfFile;
 
 /// 线程 ID 使用 `isize`，可以用负数表示错误
 pub type ThreadID = isize;
@@ -157,4 +159,18 @@ pub fn create_kernel_thread(
         .unwrap()
         .set_ra(kernel_thread_exit as usize);
     thread
+}
+
+/// 创建一个用户进程，从指定的文件名读取 ELF
+pub fn create_user_process(name: &str) -> Arc<Thread> {
+    // 从文件系统中找到程序
+    let app = ROOT_INODE.find(name).unwrap();
+    // 读取数据
+    let data = app.readall().unwrap();
+    // 解析 ELF 文件
+    let elf = ElfFile::new(data.as_slice()).unwrap();
+    // 利用 ELF 文件创建线程，映射空间并加载数据
+    let process = Process::from_elf(&elf, true).unwrap();
+    // 再从 ELF 中读出程序入口地址
+    Thread::new(process, elf.header.pt2.entry_point() as usize, None).unwrap()
 }

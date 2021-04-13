@@ -8,7 +8,7 @@ use crate::drivers::{
     block::BlockDevice,
     driver::{DeviceType, DRIVERS},
 };
-// use crate::kernel::Condvar;
+use crate::kernel::Condvar;
 use alloc::{sync::Arc, vec::Vec};
 use core::any::Any;
 use lazy_static::lazy_static;
@@ -17,8 +17,8 @@ use spin::Mutex;
 
 mod config;
 mod inode_ext;
-mod stdin;
-mod stdout;
+pub mod stdin;
+pub mod stdout;
 
 pub use config::*;
 pub use inode_ext::INodeExt;
