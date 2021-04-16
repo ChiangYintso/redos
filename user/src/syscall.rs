@@ -3,6 +3,7 @@
 pub const STDIN: usize = 0;
 pub const STDOUT: usize = 1;
 
+const SYS_CREATE_THREAD: usize = 62;
 const SYSCALL_READ: usize = 63;
 const SYSCALL_WRITE: usize = 64;
 const SYSCALL_EXIT: usize = 93;
@@ -19,6 +20,18 @@ fn syscall(id: usize, arg0: usize, arg1: usize, arg2: usize) -> isize {
             : "volatile"); // 防止编译器做激进的优化（如调换指令顺序等破坏 SBI 调用行为的优化）
     }
     ret
+}
+
+/// 线程 ID 使用 `isize`，可以用负数表示错误
+pub type ThreadID = isize;
+
+pub fn create_thread(thread_id: &mut ThreadID, func: fn()) -> isize {
+    syscall(
+        SYS_CREATE_THREAD,
+        thread_id as *mut ThreadID as usize,
+        func as usize,
+        sys_exit0 as usize,
+    )
 }
 
 /// 读取字符
@@ -49,5 +62,10 @@ pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
 /// 退出并返回数值
 pub fn sys_exit(code: isize) -> ! {
     syscall(SYSCALL_EXIT, code as usize, 0, 0);
+    unreachable!()
+}
+
+fn sys_exit0() -> ! {
+    syscall(SYSCALL_EXIT, 0, 0, 0);
     unreachable!()
 }

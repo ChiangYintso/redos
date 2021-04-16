@@ -2,7 +2,9 @@
 
 use super::*;
 use crate::interrupt::context::Context;
+use crate::process::thread::{Thread, ThreadID};
 
+pub const SYS_CREATE_THREAD: usize = 62;
 pub const SYS_READ: usize = 63;
 pub const SYS_WRITE: usize = 64;
 pub const SYS_EXIT: usize = 93;
@@ -26,6 +28,7 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
     let args = [context.x[10], context.x[11], context.x[12]];
 
     let result = match syscall_id {
+        SYS_CREATE_THREAD => sys_create_thread(args[0] as *mut ThreadID, args[1], args[2]),
         SYS_READ => sys_read(args[0], args[1] as *mut u8, args[2]),
         SYS_WRITE => sys_write(args[0], args[1] as *mut u8, args[2]),
         SYS_EXIT => sys_exit(args[0]),
@@ -52,6 +55,26 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
             // 终止，跳转到 PROCESSOR 调度的下一个线程
             PROCESSOR.lock().kill_current_thread();
             PROCESSOR.lock().prepare_next_thread()
+        }
+    }
+}
+
+fn sys_create_thread(
+    thread_id: *mut ThreadID,
+    entry_point: usize,
+    exit_fn: usize,
+) -> SyscallResult {
+    match Thread::spawn(entry_point, exit_fn) {
+        Ok(nt) => {
+            unsafe {
+                *thread_id = nt.id;
+            }
+            PROCESSOR.lock().add_thread(nt);
+            SyscallResult::Proceed(0)
+        }
+        Err(e) => {
+            println!("error in sys_create_thread: {}", e);
+            SyscallResult::Proceed(-1)
         }
     }
 }

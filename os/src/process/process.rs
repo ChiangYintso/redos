@@ -45,7 +45,7 @@ impl Process {
 
     /// 创建进程，从文件中读取代码
     pub fn from_elf(file: &ElfFile, is_user: bool) -> KResult<Arc<Self>> {
-        Ok(Arc::new(Self {
+        Ok(Arc::new(Process {
             is_user,
             inner: Mutex::new(ProcessInner {
                 memory_set: MemorySet::from_elf(file, is_user)?,

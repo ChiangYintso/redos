@@ -7,7 +7,6 @@ mod syscall;
 
 extern crate alloc;
 
-use crate::interrupt::*;
 use crate::process::*;
 use alloc::sync::Arc;
 pub(self) use fs::*;
