@@ -189,13 +189,15 @@ impl Processor {
     /// 每隔1秒查看`alarm_threads`中有没有需要唤醒的线程
     pub fn alarm(&mut self) {
         self.num_seconds += 1;
-        if let Some(thread) = self.alarm_threads.peek() {
-            if thread.alarm_time < self.num_seconds {
+        while let Some(thread) = self.alarm_threads.peek() {
+            if thread.alarm_time <= self.num_seconds {
                 thread.thread.inner().sleeping = false;
                 let t = self.alarm_threads.pop().unwrap();
                 if !t.thread.inner().dead {
                     self.scheduler.add_thread(t.thread);
                 }
+            } else {
+                return;
             }
         }
     }
