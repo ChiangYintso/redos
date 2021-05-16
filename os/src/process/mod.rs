@@ -1,7 +1,7 @@
 mod kernel_stack;
 mod lock;
 pub mod process;
-mod processor;
+pub mod processor;
 mod scheduler;
 pub mod thread;
 

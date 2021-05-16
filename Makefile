@@ -1,6 +1,8 @@
+KERNEL_BIN:=redos
+
 run:
 	@make -C user build
-	@make -C os run
+	@make -C os run KERNEL_BIN=$(KERNEL_BIN)
 
 clean:
 	@make -C user clean

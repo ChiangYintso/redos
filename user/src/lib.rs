@@ -9,19 +9,21 @@
 #![feature(panic_info_message)]
 #![feature(linkage)]
 
+use core::alloc::Layout;
+use core::panic::PanicInfo;
+
+use buddy_system_allocator::LockedHeap;
+
+use config::USER_HEAP_SIZE;
+pub use redos::syscall::*;
+
 pub mod config;
-pub mod syscall;
 
 #[macro_use]
 pub mod console;
+pub mod redos;
 
 extern crate alloc;
-
-pub use crate::syscall::*;
-use buddy_system_allocator::LockedHeap;
-use config::USER_HEAP_SIZE;
-use core::alloc::Layout;
-use core::panic::PanicInfo;
 
 /// 大小为 [`USER_HEAP_SIZE`] 的堆空间
 static mut HEAP_SPACE: [u8; USER_HEAP_SIZE] = [0; USER_HEAP_SIZE];

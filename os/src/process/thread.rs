@@ -65,6 +65,14 @@ impl Thread {
         self.inner().context.replace(context);
     }
 
+    /// 当前进程创建一个新的线程
+    pub fn spawn(entry_point: usize, exit_fn: usize) -> KResult<Arc<Thread>> {
+        let current_thread = PROCESSOR.lock().current_thread();
+        let t = Thread::new(current_thread.process.clone(), entry_point, None)?;
+        t.as_ref().inner().context.as_mut().unwrap().set_ra(exit_fn);
+        Ok(t)
+    }
+
     /// 创建一个线程
     pub fn new(
         process: Arc<Process>,

@@ -3,7 +3,7 @@
 ## Build and run in QEMU
 
 ```shell
-make qemu
+make run KERNEL_BIN=test_never_return
 ```
 
 

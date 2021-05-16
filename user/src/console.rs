@@ -2,7 +2,7 @@
 //!
 //! 代码与 `os` crate 中的 `console.rs` 基本相同
 
-use crate::syscall::*;
+use crate::redos::syscall::*;
 use alloc::string::String;
 use core::fmt::{self, Write};
 

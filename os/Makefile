@@ -1,7 +1,7 @@
 TARGET      := riscv64imac-unknown-none-elf
 MODE        := debug
-KERNEL_FILENAME = redos
-KERNEL_FILE := target/$(TARGET)/$(MODE)/$(KERNEL_FILENAME)
+KERNEL_BIN  :=
+KERNEL_FILE := target/$(TARGET)/$(MODE)/$(KERNEL_BIN)
 BIN_FILE    := target/$(TARGET)/$(MODE)/kernel.bin
 
 OBJDUMP     := rust-objdump --arch-name=riscv64

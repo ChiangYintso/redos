@@ -1,16 +1,14 @@
 //! 系统调用
 
+use lib_redos;
+
 pub const STDIN: usize = 0;
 pub const STDOUT: usize = 1;
 
-const SYSCALL_READ: usize = 63;
-const SYSCALL_WRITE: usize = 64;
-const SYSCALL_EXIT: usize = 93;
-
 /// 将参数放在对应寄存器中，并执行 `ecall`
-fn syscall(id: usize, arg0: usize, arg1: usize, arg2: usize) -> isize {
+pub(crate) fn syscall(id: usize, arg0: usize, arg1: usize, arg2: usize) -> isize {
     // 返回值
-    let mut ret;
+    let mut ret = 0;
     unsafe {
         llvm_asm!("ecall"
             : "={x10}" (ret)
@@ -25,7 +23,7 @@ fn syscall(id: usize, arg0: usize, arg1: usize, arg2: usize) -> isize {
 pub fn sys_read(fd: usize, buffer: &mut [u8]) -> isize {
     loop {
         let ret = syscall(
-            SYSCALL_READ,
+            lib_redos::SYS_READ,
             fd,
             buffer as *const [u8] as *const u8 as usize,
             buffer.len(),
@@ -39,7 +37,7 @@ pub fn sys_read(fd: usize, buffer: &mut [u8]) -> isize {
 /// 打印字符串
 pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
     syscall(
-        SYSCALL_WRITE,
+        lib_redos::SYS_WRITE,
         fd,
         buffer as *const [u8] as *const u8 as usize,
         buffer.len(),
@@ -48,6 +46,11 @@ pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
 
 /// 退出并返回数值
 pub fn sys_exit(code: isize) -> ! {
-    syscall(SYSCALL_EXIT, code as usize, 0, 0);
+    syscall(lib_redos::SYS_EXIT, code as usize, 0, 0);
+    unreachable!()
+}
+
+fn sys_exit0() -> ! {
+    syscall(lib_redos::SYS_EXIT, 0, 0, 0);
     unreachable!()
 }
