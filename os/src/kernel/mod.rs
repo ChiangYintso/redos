@@ -3,11 +3,11 @@
 mod condvar;
 mod fs;
 mod process;
-mod syscall;
+pub mod syscall;
 
 extern crate alloc;
 
-use crate::process::*;
+pub use crate::process::*;
 use alloc::sync::Arc;
 pub(self) use fs::*;
 pub(self) use process::*;

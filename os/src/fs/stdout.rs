@@ -11,6 +11,11 @@ lazy_static! {
 pub struct Stdout;
 
 impl INode for Stdout {
+    /// Read bytes at `offset` into `buf`, return the number of bytes read.
+    fn read_at(&self, _offset: usize, _buf: &mut [u8]) -> Result<usize> {
+        Err(FsError::NotSupported)
+    }
+
     fn write_at(&self, offset: usize, buf: &[u8]) -> Result<usize> {
         if offset != 0 {
             Err(FsError::NotSupported)
@@ -20,11 +25,6 @@ impl INode for Stdout {
         } else {
             Err(FsError::InvalidParam)
         }
-    }
-
-    /// Read bytes at `offset` into `buf`, return the number of bytes read.
-    fn read_at(&self, _offset: usize, _buf: &mut [u8]) -> Result<usize> {
-        Err(FsError::NotSupported)
     }
 
     fn poll(&self) -> Result<PollStatus> {

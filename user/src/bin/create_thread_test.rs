@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate user_lib;
 
-use user_lib::create_thread;
+use user_lib::redos::create_thread;
 
 static mut A: i32 = 0;
 
@@ -22,10 +22,9 @@ pub fn main() -> usize {
 }
 
 fn thread_fn() {
-    for _ in 0..100 {
+    for _ in 0..10000000 {
         unsafe {
             A += 1;
-            println!("{}", A);
         }
     }
     println!("done!");

@@ -2,21 +2,19 @@
 
 use super::*;
 use crate::interrupt::context::Context;
+use crate::process::processor::sys_sleep;
 use crate::process::thread::{Thread, ThreadID};
 
-pub const SYS_CREATE_THREAD: usize = 62;
-pub const SYS_READ: usize = 63;
-pub const SYS_WRITE: usize = 64;
-pub const SYS_EXIT: usize = 93;
-
 /// 系统调用在内核之内的返回值
-pub(super) enum SyscallResult {
+pub enum SyscallResult {
     /// 继续执行，带返回值
     Proceed(isize),
     /// 记录返回值，但暂存当前线程
     Park(isize),
     /// 丢弃当前 context，调度下一个线程继续执行
     Kill,
+    /// 当前线程已睡眠并保存了context，调度下一个线程继续执行
+    Sleep,
 }
 
 /// 系统调用的总入口
@@ -28,10 +26,13 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
     let args = [context.x[10], context.x[11], context.x[12]];
 
     let result = match syscall_id {
-        SYS_CREATE_THREAD => sys_create_thread(args[0] as *mut ThreadID, args[1], args[2]),
-        SYS_READ => sys_read(args[0], args[1] as *mut u8, args[2]),
-        SYS_WRITE => sys_write(args[0], args[1] as *mut u8, args[2]),
-        SYS_EXIT => sys_exit(args[0]),
+        lib_redos::SYS_SLEEP => sys_sleep(args[0] as u64, context),
+        lib_redos::SYS_CREATE_THREAD => {
+            sys_create_thread(args[0] as *mut ThreadID, args[1], args[2])
+        }
+        lib_redos::SYS_READ => sys_read(args[0], args[1] as *mut u8, args[2]),
+        lib_redos::SYS_WRITE => sys_write(args[0], args[1] as *mut u8, args[2]),
+        lib_redos::SYS_EXIT => sys_exit(args[0]),
         _ => {
             println!("unimplemented syscall: {}", syscall_id);
             SyscallResult::Kill
@@ -56,9 +57,11 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
             PROCESSOR.lock().kill_current_thread();
             PROCESSOR.lock().prepare_next_thread()
         }
+        SyscallResult::Sleep => PROCESSOR.lock().prepare_next_thread(),
     }
 }
 
+/// 用户进程创建线程
 fn sys_create_thread(
     thread_id: *mut ThreadID,
     entry_point: usize,

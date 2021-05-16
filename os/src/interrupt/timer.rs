@@ -31,12 +31,16 @@ fn set_next_timeout() {
 /// 每一次时钟中断时调用
 ///
 /// 设置下一次时钟中断，同时计数 +1
-pub fn tick() {
+/// 若经历了约1秒，返回true；否则返回false
+pub fn tick_for_1sec() -> bool {
     set_next_timeout();
     unsafe {
         TICKS += 1;
-        // if TICKS % 100 == 0 {
-        //     println!("{} tick", TICKS);
-        // }
+        if TICKS == 100 {
+            TICKS = 0;
+            true
+        } else {
+            false
+        }
     }
 }
