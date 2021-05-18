@@ -132,9 +132,10 @@ impl Processor {
     }
 
     /// 终止当前的线程
-    pub fn kill_current_thread(&mut self) {
+    pub fn kill_current_thread(&mut self) -> Arc<Thread> {
         // 从调度器中移除
         let thread = self.current_thread.take().unwrap();
         self.scheduler.remove_thread(&thread);
+        thread
     }
 }

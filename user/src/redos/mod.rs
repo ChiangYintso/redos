@@ -17,3 +17,7 @@ pub fn create_thread(thread_id: &mut ThreadID, f: fn(*const c_void), args: *cons
 pub fn sleep(sec: u64) {
     crate::syscall(lib_redos::SYS_SLEEP, sec as usize, 0, 0, 0);
 }
+
+pub fn join(thread_id: ThreadID) {
+    crate::syscall(lib_redos::SYS_JOIN, thread_id as usize, 0, 0, 0);
+}

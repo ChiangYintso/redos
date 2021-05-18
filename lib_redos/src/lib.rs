@@ -5,6 +5,7 @@ pub type ThreadID = isize;
 pub type MutexID = usize;
 
 pub const SYS_SLEEP: usize = 3;
+pub const SYS_JOIN: usize = 4;
 
 pub const SYS_MUTEX_CREATE: usize = 14;
 pub const SYS_MUTEX_DESTROY: usize = 15;

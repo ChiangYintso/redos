@@ -1,14 +1,12 @@
 use core::sync::atomic::{AtomicIsize, Ordering};
 
-use lib_redos::MutexID;
-
 use super::alloc::collections::VecDeque;
 use super::alloc::sync::Arc;
 use crate::kernel::SyscallResult;
 use crate::process::thread::Thread;
 use crate::process::thread::ThreadState::Sleeping;
 use crate::process::PROCESSOR;
-use xmas_elf::dynamic::Tag::Symbolic;
+use lib_redos::MutexID;
 
 static NO_OWNER: isize = -123;
 
@@ -39,7 +37,10 @@ impl Mutex {
             Ordering::Relaxed,
         );
         match res {
-            Ok(_) => SyscallResult::Proceed(0),
+            Ok(old) => {
+                debug_assert_eq!(old, NO_OWNER);
+                SyscallResult::Proceed(0)
+            }
             Err(_) => {
                 self.queue.push_back(current_thread);
                 processor_guard.sleep_current_thread();
@@ -57,7 +58,7 @@ impl Mutex {
                 break;
             }
         }
-        SyscallResult::Proceed(0)
+        SyscallResult::Park(0)
     }
 }
 

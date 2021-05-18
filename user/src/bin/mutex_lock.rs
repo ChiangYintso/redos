@@ -32,14 +32,17 @@ pub fn main() -> usize {
 
 fn thread_fn(id: *const c_void) {
     let id = unsafe { (id as *const isize).as_ref().unwrap() };
-    for _ in 0..1000000 {
+    for _ in 0..100000 {
         let mut guard = DATA.lock();
         let before = *guard;
         *guard += 1;
-        let after = *guard;
-        if after != before + 1 {
-            println!("before: {}, after: {}", before, after);
+        for i in 0..10 {
+            let after = *guard;
+            if after != before + 1 {
+                println!("{} before: {}, after: {}", i, before, after);
+            }
         }
+
         drop(guard);
     }
     let guard = DATA.lock();

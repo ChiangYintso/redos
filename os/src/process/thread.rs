@@ -3,9 +3,12 @@
 use super::*;
 use crate::fs::{INodeExt, ROOT_INODE};
 use crate::interrupt::context::Context;
+use crate::kernel::SyscallResult;
+use crate::kernel::SyscallResult::{Park, Proceed};
 use crate::memory::addr::VirtualAddress;
 use crate::memory::mapping::Flags;
 use crate::memory::range::Range;
+use crate::process::condvar::Condvar;
 use crate::process::kernel_stack::KERNEL_STACK;
 use crate::process::process::Process;
 use crate::process::thread::ThreadState::{Dead, Runnable};
@@ -32,6 +35,8 @@ pub struct Thread {
     pub process: Arc<Process>,
     /// 用 `Mutex` 包装一些可变的变量
     pub inner: Mutex<ThreadInner>,
+
+    pub join_handle: Condvar,
 }
 
 #[derive(Eq, PartialEq)]
@@ -103,6 +108,7 @@ impl Thread {
             },
             stack,
             process,
+            join_handle: Condvar::default(),
             inner: Mutex::new(ThreadInner {
                 context: Some(context),
                 state: Runnable,
@@ -122,12 +128,19 @@ impl Thread {
     pub fn inner(&self) -> spin::MutexGuard<ThreadInner> {
         self.inner.lock()
     }
+
+    pub fn wait(&self) {
+        self.join_handle.wait();
+    }
 }
 
 impl Drop for Thread {
     fn drop(&mut self) {
-        let mut process_inner = self.process.inner.lock();
-        process_inner.threads.remove(&self.id);
+        {
+            let mut process_inner = self.process.inner.lock();
+            process_inner.threads.remove(&self.id);
+        }
+        self.join_handle.notify_all();
     }
 }
 
@@ -161,6 +174,18 @@ impl core::fmt::Debug for Thread {
             .field("stack", &self.stack)
             .field("context", &self.inner().context)
             .finish()
+    }
+}
+
+pub fn sys_join(tid: ThreadID) -> SyscallResult {
+    let current_thread = PROCESSOR.lock().current_thread();
+    let guard = current_thread.process.inner.lock();
+    match guard.threads.get(&tid) {
+        Some(t) => unsafe {
+            (*t.as_ptr()).wait();
+            Park(0)
+        },
+        None => Proceed(-1),
     }
 }
 

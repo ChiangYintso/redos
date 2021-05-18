@@ -6,6 +6,7 @@ use crate::kernel::*;
 use crate::process::thread::Thread;
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use core::option::Option::Some;
 use spin::Mutex;
 
 #[derive(Default)]
@@ -25,6 +26,14 @@ impl Condvar {
     pub fn notify_one(&self) {
         if let Some(thread) = self.watchers.lock().pop_front() {
             PROCESSOR.lock().wake_thread(thread);
+        }
+    }
+
+    pub fn notify_all(&self) {
+        let mut guard = self.watchers.lock();
+        let mut processor_guard = PROCESSOR.lock();
+        while let Some(t) = guard.pop_front() {
+            processor_guard.wake_thread(t);
         }
     }
 }

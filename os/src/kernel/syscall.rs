@@ -3,6 +3,7 @@
 use super::*;
 use crate::interrupt::context::Context;
 use crate::kernel::mutex::{sys_mutex_create, sys_mutex_destroy, sys_mutex_lock};
+use crate::kernel::thread::sys_join;
 use crate::process::alarm::sys_sleep;
 use crate::process::mutex::sys_mutex_unlock;
 use crate::process::thread::{Thread, ThreadID};
@@ -29,6 +30,7 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
 
     let result = match syscall_id {
         lib_redos::SYS_SLEEP => sys_sleep(args[0] as u64),
+        lib_redos::SYS_JOIN => sys_join(args[0] as ThreadID),
         lib_redos::SYS_MUTEX_CREATE => sys_mutex_create(args[0] as *mut MutexID),
         lib_redos::SYS_MUTEX_DESTROY => sys_mutex_destroy(args[0] as *mut MutexID),
         lib_redos::SYS_MUTEX_LOCK => sys_mutex_lock(args[0] as *mut MutexID),
@@ -58,12 +60,14 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
             // 将返回值放入 context 中
             context.x[10] = ret as usize;
             // 保存 context，准备下一个线程
-            PROCESSOR.lock().park_current_thread(context);
-            PROCESSOR.lock().prepare_next_thread()
+            let mut guard = PROCESSOR.lock();
+            guard.park_current_thread(context);
+            guard.prepare_next_thread()
         }
         SyscallResult::Kill => {
             // 终止，跳转到 PROCESSOR 调度的下一个线程
-            PROCESSOR.lock().kill_current_thread();
+            let t = PROCESSOR.lock().kill_current_thread();
+            drop(t);
             PROCESSOR.lock().prepare_next_thread()
         }
     }

@@ -37,7 +37,7 @@ pub fn init() {
         *PhysicalAddress(0x0C20_1000).deref_kernel() = 0u32;
     }
 }
-static mut a: i32 = 0;
+
 /// 中断的处理入口
 ///
 /// `interrupt.asm` 首先保存寄存器至 Context，其作为参数和 scause 以及 stval 一并传入此函数
@@ -84,7 +84,8 @@ fn supervisor_timer(context: &mut Context) -> *mut Context {
         ALARM.lock().alarm();
     }
     PROCESSOR.lock().park_current_thread(context);
-    PROCESSOR.lock().prepare_next_thread()
+    let cxt = PROCESSOR.lock().prepare_next_thread();
+    cxt
 }
 
 /// 处理外部中断，只实现了键盘输入
