@@ -2,8 +2,12 @@
 
 use super::*;
 use crate::interrupt::context::Context;
-use crate::process::processor::sys_sleep;
+use crate::kernel::mutex::{sys_mutex_create, sys_mutex_destroy, sys_mutex_lock};
+use crate::process::alarm::sys_sleep;
+use crate::process::mutex::sys_mutex_unlock;
 use crate::process::thread::{Thread, ThreadID};
+use core::ffi::c_void;
+use lib_redos::MutexID;
 
 /// 系统调用在内核之内的返回值
 pub enum SyscallResult {
@@ -13,8 +17,6 @@ pub enum SyscallResult {
     Park(isize),
     /// 丢弃当前 context，调度下一个线程继续执行
     Kill,
-    /// 当前线程已睡眠并保存了context，调度下一个线程继续执行
-    Sleep,
 }
 
 /// 系统调用的总入口
@@ -23,13 +25,20 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
     context.sepc += 4;
 
     let syscall_id = context.x[17];
-    let args = [context.x[10], context.x[11], context.x[12]];
+    let args = [context.x[10], context.x[11], context.x[12], context.x[13]];
 
     let result = match syscall_id {
-        lib_redos::SYS_SLEEP => sys_sleep(args[0] as u64, context),
-        lib_redos::SYS_CREATE_THREAD => {
-            sys_create_thread(args[0] as *mut ThreadID, args[1], args[2])
-        }
+        lib_redos::SYS_SLEEP => sys_sleep(args[0] as u64),
+        lib_redos::SYS_MUTEX_CREATE => sys_mutex_create(args[0] as *mut MutexID),
+        lib_redos::SYS_MUTEX_DESTROY => sys_mutex_destroy(args[0] as *mut MutexID),
+        lib_redos::SYS_MUTEX_LOCK => sys_mutex_lock(args[0] as *mut MutexID),
+        lib_redos::SYS_MUTEX_UNLOCK => sys_mutex_unlock(args[0] as *mut MutexID),
+        lib_redos::SYS_CREATE_THREAD => sys_create_thread(
+            args[0] as *mut ThreadID,
+            args[1],
+            args[2],
+            args[3] as *const c_void,
+        ),
         lib_redos::SYS_READ => sys_read(args[0], args[1] as *mut u8, args[2]),
         lib_redos::SYS_WRITE => sys_write(args[0], args[1] as *mut u8, args[2]),
         lib_redos::SYS_EXIT => sys_exit(args[0]),
@@ -57,7 +66,6 @@ pub fn syscall_handler(context: &mut Context) -> *mut Context {
             PROCESSOR.lock().kill_current_thread();
             PROCESSOR.lock().prepare_next_thread()
         }
-        SyscallResult::Sleep => PROCESSOR.lock().prepare_next_thread(),
     }
 }
 
@@ -66,8 +74,9 @@ fn sys_create_thread(
     thread_id: *mut ThreadID,
     entry_point: usize,
     exit_fn: usize,
+    args: *const c_void,
 ) -> SyscallResult {
-    match Thread::spawn(entry_point, exit_fn) {
+    match Thread::spawn(entry_point, exit_fn, args) {
         Ok(nt) => {
             unsafe {
                 *thread_id = nt.id;

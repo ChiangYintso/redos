@@ -1,47 +1,18 @@
 //! 实现线程的调度和管理 [`Processor`]
 
-use super::alloc::collections::binary_heap::BinaryHeap;
+use lazy_static::*;
+
+use crate::interrupt::context::Context;
+use crate::kernel::syscall::SyscallResult;
+use crate::kernel::thread::ThreadState::Runnable;
+use crate::process::alarm::ALARM;
+use crate::process::thread::Thread;
+use crate::process::thread::ThreadState::{Dead, Sleeping};
+
 use super::alloc::sync::Arc;
 use super::lock::Lock;
 use super::process::Process;
 use super::scheduler::*;
-use crate::interrupt::context::Context;
-use crate::kernel::syscall::SyscallResult;
-use crate::process::thread::Thread;
-use core::cmp::Ordering;
-use hashbrown::HashSet;
-use lazy_static::*;
-
-struct ThreadWithAlarmTime {
-    thread: Arc<Thread>,
-    alarm_time: u64,
-}
-
-impl ThreadWithAlarmTime {
-    fn new(thread: Arc<Thread>, alarm_time: u64) -> ThreadWithAlarmTime {
-        ThreadWithAlarmTime { thread, alarm_time }
-    }
-}
-
-impl PartialEq for ThreadWithAlarmTime {
-    fn eq(&self, other: &Self) -> bool {
-        self.alarm_time == other.alarm_time
-    }
-}
-
-impl Eq for ThreadWithAlarmTime {}
-
-impl PartialOrd for ThreadWithAlarmTime {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.alarm_time.partial_cmp(&self.alarm_time)
-    }
-}
-
-impl Ord for ThreadWithAlarmTime {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.alarm_time.cmp(&self.alarm_time)
-    }
-}
 
 lazy_static! {
     /// 全局的 [`Processor`]
@@ -100,12 +71,8 @@ pub struct Processor {
     current_thread: Option<Arc<Thread>>,
     /// 线程调度器，记录活跃线程
     scheduler: SchedulerImpl<Arc<Thread>>,
-    /// 保存休眠线程
-    sleeping_threads: HashSet<Arc<Thread>>,
-    /// 在某一时刻需要唤醒的线程
-    alarm_threads: BinaryHeap<ThreadWithAlarmTime>,
-    /// 自系统开机初始化后经历的秒数
-    num_seconds: u64,
+
+    num_sleeping_threads: u64,
 }
 
 impl Processor {
@@ -127,7 +94,7 @@ impl Processor {
             context
         } else {
             // 没有活跃线程
-            if self.sleeping_threads.is_empty() && self.alarm_threads.is_empty() {
+            if self.num_sleeping_threads == 0 {
                 // 也没有休眠线程，则退出
                 panic!("all threads terminated, shutting down");
             } else {
@@ -140,13 +107,7 @@ impl Processor {
 
     /// 添加一个待执行的线程
     pub fn add_thread(&mut self, thread: Arc<Thread>) {
-        self.scheduler.add_thread(thread);
-    }
-
-    /// 唤醒一个休眠线程
-    pub fn wake_thread(&mut self, thread: Arc<Thread>) {
-        thread.inner().sleeping = false;
-        self.sleeping_threads.remove(&thread);
+        debug_assert!(thread.inner().state == Runnable);
         self.scheduler.add_thread(thread);
     }
 
@@ -155,15 +116,19 @@ impl Processor {
         self.current_thread().park(*context);
     }
 
-    /// 令当前线程进入休眠
-    pub fn sleep_current_thread(&mut self) {
-        // 从 current_thread 中取出
+    pub fn sleep_current_thread(&mut self) -> Arc<Thread> {
         let current_thread = self.current_thread();
-        // 记为 sleeping
-        current_thread.inner().sleeping = true;
-        // 从 scheduler 移出到 sleeping_threads 中
         self.scheduler.remove_thread(&current_thread);
-        self.sleeping_threads.insert(current_thread);
+        self.num_sleeping_threads += 1;
+        current_thread.inner().state = Sleeping;
+        current_thread
+    }
+
+    pub fn wake_thread(&mut self, thread: Arc<Thread>) {
+        debug_assert!(thread.inner().state == Sleeping);
+        self.num_sleeping_threads -= 1;
+        thread.inner().state = Runnable;
+        self.scheduler.add_thread(thread);
     }
 
     /// 终止当前的线程
@@ -172,40 +137,4 @@ impl Processor {
         let thread = self.current_thread.take().unwrap();
         self.scheduler.remove_thread(&thread);
     }
-
-    pub fn put_current_thread_to_alarm_threads(&mut self, sec: u64) {
-        // 从 current_thread 中取出
-        let current_thread = self.current_thread();
-        // 记为 sleeping
-        current_thread.inner().sleeping = true;
-        // 从 scheduler 移出到 sleeping_threads 中
-        self.scheduler.remove_thread(&current_thread);
-        self.alarm_threads.push(ThreadWithAlarmTime::new(
-            current_thread,
-            self.num_seconds + sec,
-        ))
-    }
-
-    /// 每隔1秒查看`alarm_threads`中有没有需要唤醒的线程
-    pub fn alarm(&mut self) {
-        self.num_seconds += 1;
-        while let Some(thread) = self.alarm_threads.peek() {
-            if thread.alarm_time <= self.num_seconds {
-                thread.thread.inner().sleeping = false;
-                let t = self.alarm_threads.pop().unwrap();
-                if !t.thread.inner().dead {
-                    self.scheduler.add_thread(t.thread);
-                }
-            } else {
-                return;
-            }
-        }
-    }
-}
-
-/// `context`: 当前线程的上下文
-pub(crate) fn sys_sleep(sec: u64, context: &Context) -> SyscallResult {
-    PROCESSOR.lock().park_current_thread(context);
-    PROCESSOR.lock().put_current_thread_to_alarm_threads(sec);
-    SyscallResult::Sleep
 }

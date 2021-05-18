@@ -1,5 +1,10 @@
+pub use processor::PROCESSOR;
+
+pub mod alarm;
+pub mod condvar;
 mod kernel_stack;
 mod lock;
+pub mod mutex;
 pub mod process;
 pub mod processor;
 mod scheduler;
@@ -12,5 +17,3 @@ pub const STACK_SIZE: usize = 0x8_0000;
 
 /// 共用的内核栈大小 512 KB
 pub const KERNEL_STACK_SIZE: usize = 0x8_0000;
-
-pub use processor::PROCESSOR;

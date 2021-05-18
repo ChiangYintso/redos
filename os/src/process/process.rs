@@ -2,18 +2,24 @@
 
 extern crate alloc;
 
-use super::alloc::sync::Arc;
 use crate::fs::stdin::STDIN;
 use crate::fs::INode;
 use crate::fs::STDOUT;
+use crate::kernel::thread::ThreadID;
 use crate::memory::addr::VirtualAddress;
 use crate::memory::mapping::{Flags, MapType, MemorySet, Segment};
 use crate::memory::range::Range;
 use crate::memory::PAGE_SIZE;
+use crate::process::thread::Thread;
 use crate::KResult;
+use alloc::sync::Weak;
 use alloc::{vec, vec::Vec};
+use hashbrown::HashMap;
+use lib_redos::MutexID;
 use spin::Mutex;
 use xmas_elf::ElfFile;
+
+use super::alloc::sync::Arc;
 
 /// 进程的信息
 pub struct Process {
@@ -28,6 +34,9 @@ pub struct ProcessInner {
     pub memory_set: MemorySet,
     /// 打开的文件描述符
     pub descriptors: Vec<Arc<dyn INode>>,
+    pub threads: HashMap<ThreadID, Weak<Thread>>,
+    pub mutex_queue: HashMap<MutexID, super::mutex::Mutex>,
+    next_mutex_id: MutexID,
 }
 
 #[allow(unused)]
@@ -39,6 +48,9 @@ impl Process {
             inner: Mutex::new(ProcessInner {
                 memory_set: MemorySet::new_kernel()?,
                 descriptors: vec![STDIN.clone(), STDOUT.clone()],
+                threads: HashMap::default(),
+                mutex_queue: HashMap::default(),
+                next_mutex_id: 0,
             }),
         }))
     }
@@ -50,6 +62,9 @@ impl Process {
             inner: Mutex::new(ProcessInner {
                 memory_set: MemorySet::from_elf(file, is_user)?,
                 descriptors: vec![STDIN.clone(), STDOUT.clone()],
+                threads: HashMap::default(),
+                mutex_queue: HashMap::default(),
+                next_mutex_id: 0,
             }),
         }))
     }
@@ -86,5 +101,13 @@ impl Process {
         )?;
         // 返回地址区间（使用参数 size，而非向上取整的 alloc_size）
         Ok(Range::from(range.start..(range.start + size)))
+    }
+
+    pub fn create_mutex(&self) -> MutexID {
+        let mut guard = self.inner.lock();
+        let id: MutexID = guard.next_mutex_id;
+        guard.mutex_queue.insert(id, super::mutex::Mutex::default());
+        guard.next_mutex_id += 1;
+        id
     }
 }

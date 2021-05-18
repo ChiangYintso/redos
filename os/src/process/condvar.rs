@@ -2,9 +2,11 @@
 
 extern crate alloc;
 
-use super::*;
+use crate::kernel::*;
 use crate::process::thread::Thread;
 use alloc::collections::VecDeque;
+use alloc::sync::Arc;
+use spin::Mutex;
 
 #[derive(Default)]
 pub struct Condvar {
@@ -15,10 +17,8 @@ pub struct Condvar {
 impl Condvar {
     /// 令当前线程休眠，等待此条件变量
     pub fn wait(&self) {
-        self.watchers
-            .lock()
-            .push_back(PROCESSOR.lock().current_thread());
-        PROCESSOR.lock().sleep_current_thread();
+        let thread = PROCESSOR.lock().sleep_current_thread();
+        self.watchers.lock().push_back(thread);
     }
 
     /// 唤起一个等待此条件变量的线程

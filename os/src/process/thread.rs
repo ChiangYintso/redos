@@ -8,8 +8,10 @@ use crate::memory::mapping::Flags;
 use crate::memory::range::Range;
 use crate::process::kernel_stack::KERNEL_STACK;
 use crate::process::process::Process;
+use crate::process::thread::ThreadState::{Dead, Runnable};
 use crate::KResult;
 use alloc::sync::Arc;
+use core::ffi::c_void;
 use core::hash::{Hash, Hasher};
 use spin::Mutex;
 use xmas_elf::ElfFile;
@@ -32,16 +34,20 @@ pub struct Thread {
     pub inner: Mutex<ThreadInner>,
 }
 
+#[derive(Eq, PartialEq)]
+pub enum ThreadState {
+    Runnable,
+    Sleeping,
+    Dead,
+}
+
 /// 线程中需要可变的部分
 pub struct ThreadInner {
     /// 线程执行上下文
     ///
     /// 当且仅当线程被暂停执行时，`context` 为 `Some`
     pub context: Option<Context>,
-    /// 是否进入休眠
-    pub sleeping: bool,
-    /// 是否已经结束
-    pub dead: bool,
+    pub state: ThreadState,
 }
 
 impl Thread {
@@ -66,9 +72,13 @@ impl Thread {
     }
 
     /// 当前进程创建一个新的线程
-    pub fn spawn(entry_point: usize, exit_fn: usize) -> KResult<Arc<Thread>> {
+    pub fn spawn(entry_point: usize, exit_fn: usize, args: *const c_void) -> KResult<Arc<Thread>> {
         let current_thread = PROCESSOR.lock().current_thread();
-        let t = Thread::new(current_thread.process.clone(), entry_point, None)?;
+        let t = Thread::new(
+            current_thread.process.clone(),
+            entry_point,
+            Some(&[args as usize]),
+        )?;
         t.as_ref().inner().context.as_mut().unwrap().set_ra(exit_fn);
         Ok(t)
     }
@@ -95,17 +105,29 @@ impl Thread {
             process,
             inner: Mutex::new(ThreadInner {
                 context: Some(context),
-                sleeping: false,
-                dead: false,
+                state: Runnable,
             }),
         });
 
+        {
+            let mut process_inner = thread.process.inner.lock();
+            process_inner
+                .threads
+                .insert(thread.id, Arc::downgrade(&thread));
+        }
         Ok(thread)
     }
 
     /// 上锁并获得可变部分的引用
     pub fn inner(&self) -> spin::MutexGuard<ThreadInner> {
         self.inner.lock()
+    }
+}
+
+impl Drop for Thread {
+    fn drop(&mut self) {
+        let mut process_inner = self.process.inner.lock();
+        process_inner.threads.remove(&self.id);
     }
 }
 
@@ -145,7 +167,7 @@ impl core::fmt::Debug for Thread {
 /// 内核线程需要调用这个函数来退出
 fn kernel_thread_exit() {
     // 当前线程标记为结束
-    PROCESSOR.lock().current_thread().as_ref().inner().dead = true;
+    PROCESSOR.lock().current_thread().as_ref().inner().state = Dead;
     // 制造一个中断来交给操作系统处理
     unsafe { llvm_asm!("ebreak" :::: "volatile") };
 }

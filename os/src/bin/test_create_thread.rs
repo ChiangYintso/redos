@@ -35,7 +35,7 @@ pub extern "C" fn rust_main(_hart_id: usize, dtb_pa: PhysicalAddress) -> ! {
         let mut processor = PROCESSOR.lock();
 
         processor.add_thread(create_user_process("hello_world"));
-        processor.add_thread(create_user_process("create_thread_test"));
+        processor.add_thread(create_user_process("mutex_lock"));
     }
 
     extern "C" {

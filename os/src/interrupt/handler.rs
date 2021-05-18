@@ -3,6 +3,8 @@ use crate::interrupt::context::Context;
 use crate::interrupt::timer;
 use crate::kernel::syscall_handler;
 use crate::memory::addr::PhysicalAddress;
+use crate::process::alarm::ALARM;
+use crate::process::thread::ThreadState::Dead;
 use crate::process::PROCESSOR;
 use crate::sbi::console_getchar;
 use riscv::register::scause::{Exception, Interrupt, Scause, Trap};
@@ -35,7 +37,7 @@ pub fn init() {
         *PhysicalAddress(0x0C20_1000).deref_kernel() = 0u32;
     }
 }
-
+static mut a: i32 = 0;
 /// 中断的处理入口
 ///
 /// `interrupt.asm` 首先保存寄存器至 Context，其作为参数和 scause 以及 stval 一并传入此函数
@@ -46,7 +48,7 @@ pub fn handle_interrupt(context: &mut Context, scause: Scause, stval: usize) -> 
     {
         let mut processor = PROCESSOR.lock();
         let current_thread = processor.current_thread();
-        if current_thread.as_ref().inner().dead {
+        if current_thread.as_ref().inner().state == Dead {
             println!("thread {} exit", current_thread.id);
             processor.kill_current_thread();
             return processor.prepare_next_thread();
@@ -79,7 +81,7 @@ fn breakpoint(context: &mut Context) -> *mut Context {
 /// 处理时钟中断
 fn supervisor_timer(context: &mut Context) -> *mut Context {
     if timer::tick_for_1sec() {
-        PROCESSOR.lock().alarm();
+        ALARM.lock().alarm();
     }
     PROCESSOR.lock().park_current_thread(context);
     PROCESSOR.lock().prepare_next_thread()
